@@ -12,16 +12,16 @@
 
 <BorderPane xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1">
    <center>
-      <TableView maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0" prefWidth="1000.0">
+      <TableView fx:id="tabParts" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="800.0" prefWidth="1000.0">
          <columns>
-            <TableColumn prefWidth="40.0" text="ID" />
-            <TableColumn prefWidth="90.0" text="Group" />
-            <TableColumn prefWidth="70.0" text="Type" />
-            <TableColumn prefWidth="70.0" text="Subtype" />
-            <TableColumn prefWidth="90.0" text="Name" />
-            <TableColumn prefWidth="370.0" text="Description" />
-            <TableColumn prefWidth="110.0" text="Supplier" />
-            <TableColumn prefWidth="160.0" text="Value" />
+            <TableColumn fx:id="colId" prefWidth="40.0" text="ID" />
+            <TableColumn fx:id="colGroup" prefWidth="90.0" text="Group" />
+            <TableColumn fx:id="colType" prefWidth="70.0" text="Type" />
+            <TableColumn fx:id="colSubtype" prefWidth="70.0" text="Subtype" />
+            <TableColumn fx:id="colName" prefWidth="90.0" text="Name" />
+            <TableColumn fx:id="colDescription" prefWidth="370.0" text="Description" />
+            <TableColumn fx:id="colSupplier" prefWidth="110.0" text="Supplier" />
+            <TableColumn fx:id="colValue" prefWidth="160.0" text="Value" />
          </columns>
       </TableView>
    </center>

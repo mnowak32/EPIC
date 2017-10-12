@@ -50,30 +50,17 @@ object Hierarchy {
     val subtypes = mutableListOf<Subtype>()
 
     init {
-        loadGroups(hier)
-        println(subtypes)
-    }
-
-    private fun loadGroups(grMap: Map<String, Map<String, List<String>>>) {
-        grMap.forEach {
+        hier.forEach {
             val g = Group(it.key)
             groups += g
-            loadTypes(it.value, g)
-        }
-    }
-
-    private fun loadTypes(typMap: Map<String, List<String>>, g: Group) {
-        typMap.forEach {
-            val t = Type(it.key, g)
-            types += t
-            loadSubtypes(it.value, t)
-        }
-    }
-
-    private fun loadSubtypes(subList: List<String>, t: Type) {
-        subList.forEach {
-            val s = Subtype(it, t)
-            subtypes += s
+            it.value.forEach {
+                val t = Type(it.key, g)
+                types += t
+                it.value.forEach {
+                    val s = Subtype(it, t)
+                    subtypes += s
+                }
+            }
         }
     }
 
@@ -105,10 +92,4 @@ object Hierarchy {
 
         return s
     }
-}
-
-fun main(vararg args: String) {
-    println(Hierarchy.of("IC", "Logic", "TTL"))
-    println(Hierarchy.of("Mechanics", "Screw", "Metric"))
-    println(Hierarchy.subtypes)
 }

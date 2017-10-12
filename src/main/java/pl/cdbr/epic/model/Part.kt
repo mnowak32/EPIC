@@ -7,15 +7,19 @@ data class Part(
         val subtype: Subtype,
         val supplier: Supplier,
         val name: String,
-        val value: String?,
         val description: String,
         val count: Long,
         val sources: List<Source> = emptyList(),
-        val pack: Package
+        val pack: Package,
+        val value: String = ""
 ) {
     companion object {
         fun testData() = listOf(
-                Part(1, Subtype("Amplifier", Type("Audio", Group("IC"))), Supplier("ST"), "LM386", "", "Mono audio amplifier, 3-15V", 5L, emptyList(), Package("DIP-8"))
+                Part(1, Hierarchy.of("IC", "Audio", "Amplifier"), Supplier("ST"), "LM386", "Mono audio amplifier, 3-15V", 5L, emptyList(), Package("DIP-8")),
+                Part(2, Hierarchy.of("IC", "Microcontroller", "8 bit Atmel"), Supplier("Atmel"), "ATTiny85P", "AVR tiny, 8 bit, 2 kB RAM, 8 kB Flash, 16 MHz", 2L, emptyList(), Package("DIP-8")),
+                Part(3, Hierarchy.of("IC", "Logic", "CMOS"), Supplier("ST"), "40106", "6* inverting Schmidt trigger", 1L, emptyList(), Package("DIP-14")),
+                Part(4, Hierarchy.of("Module", "Power", "Buck"), Supplier("QSKJ"), "*DC-DC ADJ 3A", "DC-DC 12-24V to 0.8-17V 3A Step Down Power Supply", 4L, emptyList(), Package("4 pin PCB")),
+                Part(5, Hierarchy.of("Discrete", "Transistor", "N-FET"), Supplier("IR"), "2N7000", "60V 600mA Vg(th) 3V", 15L, emptyList(), Package("TO-92"))
         )
     }
 }
