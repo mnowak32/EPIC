@@ -1,7 +1,10 @@
 package pl.cdbr.epic.model
 
+import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import tornadofx.*
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class Part(
         val id: Int,
         val subtype: Subtype,

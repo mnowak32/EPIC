@@ -10,10 +10,11 @@ import javafx.scene.input.KeyCode
 import javafx.scene.text.TextAlignment
 import pl.cdbr.epic.model.Part
 import pl.cdbr.epic.model.SearchConfig
+import pl.cdbr.epic.service.Database
 import tornadofx.*
 
 class MainWindow : View() {
-    val partsList = FilteredList(Part.testData().observable())
+    val partsList = FilteredList(Database.parts.observable())
 
     var txtSearch: TextField by singleAssign()
     val searchConfig = SearchConfig()
@@ -28,10 +29,11 @@ class MainWindow : View() {
                 column<Part, String>("Group", { ReadOnlyObjectWrapper<String>(it.value.subtype.type.group.name) }).prefWidth(90.0)
                 column<Part, String>("Type", { ReadOnlyObjectWrapper<String>(it.value.subtype.type.name) }).prefWidth(90.0)
                 column<Part, String>("SubType", { ReadOnlyObjectWrapper<String>(it.value.subtype.name) }).prefWidth(90.0)
-                column("Name", Part::name).prefWidth(120.0)
-                column("Description", Part::description).prefWidth(430.0).remainingWidth()
+                column("Name", Part::name).prefWidth(100.0)
+                column("Description", Part::description).prefWidth(400.0).remainingWidth()
                 column<Part, String>("Supplier", { ReadOnlyObjectWrapper<String>(it.value.supplier.name) }).prefWidth(90.0)
-                column("Value", Part::value).prefWidth(90.0)
+                column("Value", Part::value).prefWidth(80.0)
+                column<Part, String>("Package", { ReadOnlyObjectWrapper<String>(it.value.pack.name) }).prefWidth(60.0)
             }
         }
         top {
@@ -40,7 +42,7 @@ class MainWindow : View() {
                 borderpaneConstraints {
                     alignment = Pos.CENTER
                 }
-                button("New item...")
+                button("New part...")
                 separator(Orientation.HORIZONTAL) {
                     prefWidth = 100.0
                 }
@@ -62,8 +64,8 @@ class MainWindow : View() {
                         doSearch(txtSearch.text)
                     }
                 }
-                
-                contextmenu {
+
+                menubutton("⋯") {
                     checkmenuitem("by Name").selectedProperty().bindBidirectional(searchConfig.nameProperty)
                     checkmenuitem("by Description").selectedProperty().bindBidirectional(searchConfig.descProperty)
                     checkmenuitem("by Value").selectedProperty().bindBidirectional(searchConfig.valueProperty)
@@ -106,7 +108,7 @@ class MainWindow : View() {
                         (searchConfig.supplier && part.supplier.name.contains(searchRx)) ||
                         (searchConfig.pack && part.pack.name.contains(searchRx)) ||
                         (searchConfig.typeSubtype &&
-                                (part.subtype.name.contains(searchRx)) || part.subtype.type.name.contains(searchRx))
+                                (part.subtype.name.contains(searchRx) || part.subtype.type.name.contains(searchRx)))
             }
         }
     }

@@ -1,11 +1,40 @@
 package pl.cdbr.epic.model
 
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.core.JsonParseException
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.databind.DeserializationContext
+import com.fasterxml.jackson.databind.JsonDeserializer
+import com.fasterxml.jackson.databind.JsonSerializer
+import com.fasterxml.jackson.databind.SerializerProvider
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
+
+@JsonSerialize(using = SubtypeSerializer::class)
+@JsonDeserialize(using = SubtypeDeserializer::class)
 data class Subtype(val name: String, val type: Type)
 data class Type(val name: String, val group: Group)
 data class Group(val name: String)
 
+class SubtypeSerializer : JsonSerializer<Subtype>() {
+    override fun serialize(value: Subtype, gen: JsonGenerator, serializers: SerializerProvider) {
+        gen.writeString("${value.type.group.name}|${value.type.name}|${value.name}")
+    }
+}
+
+class SubtypeDeserializer : JsonDeserializer<Subtype>() {
+    override fun deserialize(p: JsonParser, ctxt: DeserializationContext): Subtype {
+        val inp = p.valueAsString
+        val parts = inp.split("|", limit = 3)
+        if (parts.size < 3) {
+            throw JsonParseException(p, "Subtype do dupy")
+        }
+        return Hierarchy.of(parts[0], parts[1], parts[2])
+    }
+}
+
 object Hierarchy {
-    private val hier = mapOf(
+    val initialHier = mapOf(
             "Discrete" to mapOf(
                     "Resistor" to listOf(
                             "Small", "Power", "Shunt", "Potentiometer"
@@ -49,7 +78,7 @@ object Hierarchy {
     val types = mutableListOf<Type>()
     val subtypes = mutableListOf<Subtype>()
 
-    init {
+    fun load(hier: Map<String, Map<String, List<String>>>) {
         hier.forEach {
             val g = Group(it.key)
             groups += g
