@@ -9,6 +9,9 @@ import com.fasterxml.jackson.databind.JsonSerializer
 import com.fasterxml.jackson.databind.SerializerProvider
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import pl.cdbr.epic.model.Hierarchy.groups
+import pl.cdbr.epic.model.Hierarchy.subtypes
+import pl.cdbr.epic.model.Hierarchy.types
 
 @JsonSerialize(using = SubtypeSerializer::class)
 @JsonDeserialize(using = SubtypeDeserializer::class)
@@ -92,6 +95,18 @@ object Hierarchy {
             }
         }
     }
+
+    fun unload() = groups.map { gr ->
+            gr.name to (
+                types.filter { it.group == gr }.map { tp ->
+                    tp.name to (
+                        subtypes.filter { it.type == tp }.map {
+                            it.name
+                        }.toList()
+                    )
+                }.toMap()
+            )
+        }.toMap()
 
     fun of(group: String, type: String, subtype: String): Subtype {
         val fg = groups.find { it.name == group }
