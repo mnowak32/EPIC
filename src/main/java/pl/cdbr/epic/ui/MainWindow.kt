@@ -1,4 +1,4 @@
-package pl.cdbr.epic
+package pl.cdbr.epic.ui
 
 import javafx.beans.property.ReadOnlyObjectWrapper
 import javafx.collections.transformation.FilteredList
@@ -43,6 +43,10 @@ class MainWindow : View() {
                         column<Part, String>("Supplier", { ReadOnlyObjectWrapper<String>(it.value.supplier.name) }).prefWidth(90.0)
                         column("Value", Part::value).prefWidth(80.0)
                         column<Part, String>("Package", { ReadOnlyObjectWrapper<String>(it.value.pack.name) }).prefWidth(60.0)
+
+                        onDoubleClick {
+                            openInternalWindow(EditorFragment::class, params = mapOf("mode" to EditorMode.EDIT, "part" to selectedItem))
+                        }
                     }
                 }
             }
@@ -53,7 +57,11 @@ class MainWindow : View() {
                 borderpaneConstraints {
                     alignment = Pos.CENTER
                 }
-                button("New part...")
+                button("New part...") {
+                    action {
+                        openInternalWindow(EditorFragment::class, params = mapOf("mode" to EditorMode.NEW))
+                    }
+                }
                 separator(Orientation.HORIZONTAL) {
                     prefWidth = 100.0
                 }

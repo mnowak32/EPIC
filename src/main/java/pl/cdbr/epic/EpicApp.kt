@@ -3,6 +3,7 @@ package pl.cdbr.epic
 import javafx.application.Application
 import javafx.stage.Stage
 import pl.cdbr.epic.service.Database
+import pl.cdbr.epic.ui.MainWindow
 import tornadofx.*
 
 class EpicApp : App(MainWindow::class) {

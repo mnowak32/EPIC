@@ -66,4 +66,6 @@ object Database {
         mapper.writeValue(hierarchyFile, Hierarchy.unload())
         mapper.writeValue(partsFile, parts)
     }
+
+    fun newPartId() = (parts.map { it.id }.max() ?: 0) + 1
 }
