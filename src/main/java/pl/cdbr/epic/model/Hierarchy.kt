@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize
 @JsonSerialize(using = SubtypeSerializer::class)
 @JsonDeserialize(using = SubtypeDeserializer::class)
 data class Subtype(val name: String, val type: Type)
+
 data class Type(val name: String, val group: Group)
 data class Group(val name: String)
 

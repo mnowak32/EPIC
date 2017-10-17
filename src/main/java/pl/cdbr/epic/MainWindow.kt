@@ -4,8 +4,7 @@ import javafx.beans.property.ReadOnlyObjectWrapper
 import javafx.collections.transformation.FilteredList
 import javafx.geometry.Orientation
 import javafx.geometry.Pos
-import javafx.scene.control.CheckMenuItem
-import javafx.scene.control.TextField
+import javafx.scene.control.*
 import javafx.scene.input.KeyCode
 import javafx.scene.text.TextAlignment
 import pl.cdbr.epic.model.Part
@@ -17,23 +16,35 @@ class MainWindow : View() {
     val partsList = FilteredList(Database.parts.observable())
 
     var txtSearch: TextField by singleAssign()
+    var pagPages: Pagination by singleAssign()
+    var labTotal: Label by singleAssign()
+
     val searchConfig = SearchConfig()
+
+    val itemsPerPage = 2
 
     override val root = borderpane {
         prefWidth = 1000.0
         center {
-            tableview<Part> {
-                items = partsList
-                columnResizePolicy = SmartResize.POLICY
+            pagPages = pagination(pageCount(), 0) {
+                setPageFactory { pageNum ->
+                    val from = pageNum * itemsPerPage
+                    val to = from + itemsPerPage
+                    val toTrimmed = if (to > partsList.size) { partsList.size } else { to }
+                    tableview<Part> {
+                        items = partsList.subList(from, toTrimmed).observable()
+                        columnResizePolicy = SmartResize.POLICY
 
-                column<Part, String>("Group", { ReadOnlyObjectWrapper<String>(it.value.subtype.type.group.name) }).prefWidth(90.0)
-                column<Part, String>("Type", { ReadOnlyObjectWrapper<String>(it.value.subtype.type.name) }).prefWidth(90.0)
-                column<Part, String>("SubType", { ReadOnlyObjectWrapper<String>(it.value.subtype.name) }).prefWidth(90.0)
-                column("Name", Part::name).prefWidth(100.0)
-                column("Description", Part::description).prefWidth(400.0).remainingWidth()
-                column<Part, String>("Supplier", { ReadOnlyObjectWrapper<String>(it.value.supplier.name) }).prefWidth(90.0)
-                column("Value", Part::value).prefWidth(80.0)
-                column<Part, String>("Package", { ReadOnlyObjectWrapper<String>(it.value.pack.name) }).prefWidth(60.0)
+                        column<Part, String>("Group", { ReadOnlyObjectWrapper<String>(it.value.subtype.type.group.name) }).prefWidth(90.0)
+                        column<Part, String>("Type", { ReadOnlyObjectWrapper<String>(it.value.subtype.type.name) }).prefWidth(90.0)
+                        column<Part, String>("SubType", { ReadOnlyObjectWrapper<String>(it.value.subtype.name) }).prefWidth(90.0)
+                        column("Name", Part::name).prefWidth(100.0)
+                        column("Description", Part::description).prefWidth(400.0).remainingWidth()
+                        column<Part, String>("Supplier", { ReadOnlyObjectWrapper<String>(it.value.supplier.name) }).prefWidth(90.0)
+                        column("Value", Part::value).prefWidth(80.0)
+                        column<Part, String>("Package", { ReadOnlyObjectWrapper<String>(it.value.pack.name) }).prefWidth(60.0)
+                    }
+                }
             }
         }
         top {
@@ -73,6 +84,7 @@ class MainWindow : View() {
                     checkmenuitem("by Supplier").selectedProperty().bindBidirectional(searchConfig.supplierProperty)
                     checkmenuitem("by Package").selectedProperty().bindBidirectional(searchConfig.packProperty)
                 }
+                labTotal = label("Items count: ${partsList.size}")
             }
         }
         bottom {
@@ -96,6 +108,8 @@ class MainWindow : View() {
         }
     }
 
+    fun pageCount() = (partsList.size + itemsPerPage - 1) /  itemsPerPage
+
     fun doSearch(query: String) {
         if (query.isBlank()) {
             partsList.setPredicate { true }
@@ -111,5 +125,7 @@ class MainWindow : View() {
                                 (part.subtype.name.contains(searchRx) || part.subtype.type.name.contains(searchRx)))
             }
         }
+        pagPages.pageCount = pageCount()
+        labTotal.text = "Items count: ${partsList.size}"
     }
 }
