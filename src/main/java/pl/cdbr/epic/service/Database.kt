@@ -1,5 +1,6 @@
 package pl.cdbr.epic.service
 
+import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import pl.cdbr.epic.model.Hierarchy
@@ -8,6 +9,8 @@ import java.io.File
 
 object Database {
     private val mapper = jacksonObjectMapper()
+            .enable(SerializationFeature.INDENT_OUTPUT)
+
     private val dirName = System.getProperty("user.home") + File.separator + "EPIC"
 
     private val hierarchyFileName = "hierarchy.json"
@@ -53,6 +56,14 @@ object Database {
         Hierarchy.load(hier)
 
         parts = mapper.readValue<List<Part>>(partsFile)
+    }
 
+    fun save() {
+        if (!dir.exists()) {
+            dir.mkdir()
+        }
+
+        mapper.writeValue(hierarchyFile, Hierarchy.unload())
+        mapper.writeValue(partsFile, parts)
     }
 }
