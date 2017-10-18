@@ -1,8 +1,12 @@
 package pl.cdbr.epic.ui
 
 import javafx.beans.property.ReadOnlyObjectWrapper
+import javafx.beans.property.SimpleIntegerProperty
+import javafx.beans.property.SimpleListProperty
+import javafx.beans.property.SimpleStringProperty
 import javafx.beans.value.ChangeListener
 import javafx.beans.value.ObservableValue
+import javafx.collections.ObservableList
 import javafx.collections.transformation.FilteredList
 import javafx.geometry.Orientation
 import javafx.geometry.Pos
@@ -17,21 +21,23 @@ import tornadofx.Stylesheet.Companion.button
 import tornadofx.Stylesheet.Companion.label
 
 class MainWindow : View() {
-    val partsList = Database.parts.observable().filtered { true }
+    val partsList = Database.parts.filtered { true }
 
-    var txtSearch: TextField by singleAssign()
-    var pagPages: Pagination by singleAssign()
-    var tabPages: TableView<Part> by singleAssign()
-    var labTotal: Label by singleAssign()
+    val searchTerm = SimpleStringProperty("")
+    val pageCounter = SimpleIntegerProperty(0)
+    val currentPage = SimpleIntegerProperty(0)
+    val partsOnPage = SimpleListProperty<Part>(partsList)
+    val total = SimpleStringProperty(" Items count: ")
 
     val searchConfig = Database.config.searchConfig
 
-    val itemsPerPage = 10
+    val itemsPerPage = 5
 
     override val root = borderpane {
         prefWidth = 1000.0
         center {
-            tabPages = tableview<Part> {
+            tableview(partsOnPage.value) {
+                itemsProperty().bind(partsOnPage)
                 columnResizePolicy = SmartResize.POLICY
 
                 column<Part, String>("Group", { ReadOnlyObjectWrapper<String>(it.value.subtype.type.group.name) }).prefWidth(90.0)
@@ -51,9 +57,6 @@ class MainWindow : View() {
         top {
             toolbar {
                 prefHeight = 40.0
-                borderpaneConstraints {
-                    alignment = Pos.CENTER
-                }
                 button("New part...") {
                     action {
                         openPartEditor()
@@ -63,21 +66,21 @@ class MainWindow : View() {
                     prefWidth = 100.0
                 }
                 label("Search")
-                txtSearch = textfield {
+                textfield(searchTerm) {
                     action {
-                        doSearch(this.text)
+                        doSearch()
                     }
                     setOnKeyPressed {
                         if (it.code == KeyCode.ESCAPE) {
                             this.text = ""
-                            doSearch(this.text)
+                            doSearch()
                         }
                     }
                 }
                 button(">") {
                     textAlignment = TextAlignment.CENTER
                     action {
-                        doSearch(txtSearch.text)
+                        doSearch()
                     }
                 }
 
@@ -89,31 +92,35 @@ class MainWindow : View() {
                     checkmenuitem("by Supplier").selectedProperty().bindBidirectional(searchConfig.supplierProperty)
                     checkmenuitem("by Package").selectedProperty().bindBidirectional(searchConfig.packProperty)
                 }
-                labTotal = label("Items count: ${partsList.size}")
+                label(total) {
+                    textProperty().bind(total)
+                }
             }
         }
         bottom {
-            pagPages = pagination(pageCount(), 0) {
-                currentPageIndexProperty().addListener { _, _, newValue -> showPageNum(newValue.toInt()) }
+            pagination(pageCounter.value, 0) {
+                pageCountProperty().bind(pageCounter)
+                currentPageIndexProperty().apply {
+                    bindBidirectional(currentPage)
+                    addListener { _, _, newValue -> showPageNum(newValue.toInt()) }
+                }
             }
         }
     }
 
     init {
-        showPageNum(0)
+        doSearch()
     }
 
     fun showPageNum(pageNum: Int) {
         println("Showing pageNum: $pageNum")
         val from = pageNum * itemsPerPage
-        val to = from + itemsPerPage
-        val toTrimmed = if (to > partsList.size) { partsList.size } else { to }
-        tabPages.items = partsList.subList(from, toTrimmed).observable()
+        val to = minOf(from + itemsPerPage, partsList.size)
+        partsOnPage.value = partsList.subList(from, to).observable()
     }
 
-    fun pageCount() = (partsList.size + itemsPerPage - 1) /  itemsPerPage
-
-    fun doSearch(query: String) {
+    fun doSearch() {
+        val query = searchTerm.value
         if (query.isBlank()) {
             partsList.setPredicate { true }
         } else {
@@ -132,8 +139,11 @@ class MainWindow : View() {
     }
 
     private fun updateCount() {
-        pagPages.pageCount = pageCount()
-        labTotal.text = "Items count: ${partsList.size}"
+        println("updating count")
+        pageCounter.value = (partsList.size + itemsPerPage - 1) /  itemsPerPage
+        total.value = " Items count: ${partsList.size}"
+        currentPage.value = 0
+        showPageNum(0)
     }
 
     fun openPartEditor(part: Part? = null) {
@@ -147,10 +157,11 @@ class MainWindow : View() {
     }
 
     fun editorFinished(part: Part? = null) {
-        println("From editor: ${part}")
+        println("From editor: $part")
         if (part != null) {
             Database.savePart(part)
-            doSearch(txtSearch.text)
+            doSearch()
         }
     }
 }
+

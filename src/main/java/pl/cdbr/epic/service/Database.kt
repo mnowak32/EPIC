@@ -7,6 +7,7 @@ import pl.cdbr.epic.model.AppConfig
 import pl.cdbr.epic.model.Hierarchy
 import pl.cdbr.epic.model.Part
 import pl.cdbr.epic.model.SearchConfig
+import tornadofx.*
 import java.io.File
 
 object Database {
@@ -28,7 +29,7 @@ object Database {
     private val packagesFile = File(dirName + File.separator + packagesFileName)
     private val suppliersFile = File(dirName + File.separator + suppliersFileName)
 
-    var parts = mutableListOf<Part>()
+    var parts = mutableListOf<Part>().observable()
     var config = AppConfig.default()
 
     fun isInitialized() =
@@ -62,7 +63,8 @@ object Database {
         val hier = mapper.readValue<Map<String, Map<String, List<String>>>>(hierarchyFile)
         Hierarchy.load(hier)
 
-        parts = mapper.readValue<MutableList<Part>>(partsFile)
+        val newParts = mapper.readValue<MutableList<Part>>(partsFile)
+        parts.setAll(newParts)
         config = mapper.readValue<AppConfig>(configFile)
     }
 

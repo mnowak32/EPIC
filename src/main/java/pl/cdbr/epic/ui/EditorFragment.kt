@@ -1,14 +1,13 @@
 package pl.cdbr.epic.ui
 
-import javafx.beans.property.Property
 import javafx.beans.property.SimpleIntegerProperty
 import javafx.beans.property.SimpleStringProperty
 import javafx.scene.Node
-import javafx.scene.Parent
-import javafx.scene.control.ComboBox
-import javafx.scene.control.TextField
 import javafx.scene.input.KeyCode
-import pl.cdbr.epic.model.*
+import pl.cdbr.epic.model.Hierarchy
+import pl.cdbr.epic.model.Package
+import pl.cdbr.epic.model.Part
+import pl.cdbr.epic.model.Supplier
 import pl.cdbr.epic.service.Database
 import tornadofx.*
 
@@ -17,7 +16,7 @@ class EditorFragment : Fragment("Part editor") {
     val part = (params["part"] as Part?)
     val mainWindow = (params["parent"] as MainWindow?)
 
-    var selectedId = SimpleIntegerProperty()
+    val selectedId = SimpleIntegerProperty()
     val groupsList = Hierarchy.groups.map { it.name }.observable()
     val selectedGroup = SimpleStringProperty()
     val typesList = mutableListOf<String>().observable()
@@ -28,47 +27,49 @@ class EditorFragment : Fragment("Part editor") {
     val selectedValue = SimpleStringProperty()
     val errorMessage = SimpleStringProperty()
 
-    override val root = gridpane {
-        label("ID").onGrid(1, 1)
-        label(selectedId).onGrid(1, 2)
-
-        label("Hierarchy").onGrid(2, 1)
-        combobox(selectedGroup, groupsList) {
-            isEditable = true
-            onGrid(2, 2)
-        }
-        combobox(selectedType, typesList) {
-            isEditable = true
-            onGrid(2, 3)
-        }
-        combobox(selectedSubtype, subtypesList) {
-            isEditable = true
-            onGrid(2, 4)
-        }
-
-        label("Name").onGrid(3, 1)
-        textfield(selectedName).onGrid(3, 2)
-        label("Value").onGrid(3, 3)
-        textfield(selectedValue).onGrid(3, 4)
-
-        label(errorMessage).onGrid(6, 1)
-
-        button("Save") {
-            action {
-                doSave()
+    override val root = form {
+        fieldset("ID / Name / Value") {
+            field {
+                label(selectedId)
+                textfield(selectedName)
+                textfield(selectedValue)
             }
-            onGrid(7, 3)
         }
-        button("Cancel") {
-            action {
-                close()
+        fieldset("Hierarchy") {
+            field {
+                combobox(selectedGroup, groupsList) {
+                    isEditable = true
+                }
+                combobox(selectedType, typesList) {
+                    isEditable = true
+                }
+                combobox(selectedSubtype, subtypesList) {
+                    isEditable = true
+                }
             }
-            onGrid(7, 4)
+        }
+
+        fieldset {
+            field {
+                button("Save") {
+                    action {
+                        doSave()
+                    }
+                    disableProperty().bind(isInvalid())
+                }
+                button("Cancel") {
+                    action {
+                        close()
+                    }
+                }
+            }
         }
 
         setOnKeyPressed {
             if (it.code == KeyCode.ENTER && it.isControlDown) {
-                doSave()
+                if (!isInvalid().value) {
+                    doSave()
+                }
             }
         }
     }
@@ -100,7 +101,7 @@ class EditorFragment : Fragment("Part editor") {
     }
 
     fun doSave() {
-        if (validate()) {
+        if (!isInvalid().value) {
             val result = Part(
                     id = selectedId.value,
                     name = selectedName.value,
@@ -118,19 +119,18 @@ class EditorFragment : Fragment("Part editor") {
         }
     }
 
-    fun validate() = (selectedName.value != null)
+    fun isInvalid() = (selectedName.isEmpty)
 }
 
-fun <T : Node> T.onGrid(row: Int, col: Int, rSpan: Int = 1, cSpan: Int = 1): T {
-    val gpc = GridPaneConstraint(this)
-    with(gpc) {
-        rowIndex = row
-        columnIndex = col
-        rowSpan = rSpan
-        columnSpan = cSpan
-    }
-    return gpc.applyToNode(this)
-}
+//fun <T : Node> T.onGrid(row: Int, col: Int, rSpan: Int = 1, cSpan: Int = 1): T {
+//    val gpc = GridPaneConstraint(this).apply {
+//        rowIndex = row
+//        columnIndex = col
+//        rowSpan = rSpan
+//        columnSpan = cSpan
+//    }
+//    return gpc.applyToNode(this)
+//}
 
 enum class EditorMode {
     NEW, EDIT
