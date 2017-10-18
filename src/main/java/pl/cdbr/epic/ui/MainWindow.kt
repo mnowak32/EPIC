@@ -1,6 +1,8 @@
 package pl.cdbr.epic.ui
 
 import javafx.beans.property.ReadOnlyObjectWrapper
+import javafx.beans.value.ChangeListener
+import javafx.beans.value.ObservableValue
 import javafx.collections.transformation.FilteredList
 import javafx.geometry.Orientation
 import javafx.geometry.Pos
@@ -11,43 +13,38 @@ import pl.cdbr.epic.model.Part
 import pl.cdbr.epic.model.SearchConfig
 import pl.cdbr.epic.service.Database
 import tornadofx.*
+import tornadofx.Stylesheet.Companion.button
+import tornadofx.Stylesheet.Companion.label
 
 class MainWindow : View() {
-    val partsList = FilteredList(Database.parts.observable())
+    val partsList = Database.parts.observable().filtered { true }
 
     var txtSearch: TextField by singleAssign()
     var pagPages: Pagination by singleAssign()
+    var tabPages: TableView<Part> by singleAssign()
     var labTotal: Label by singleAssign()
 
-    val searchConfig = SearchConfig()
+    val searchConfig = Database.config.searchConfig
 
-    val itemsPerPage = 2
+    val itemsPerPage = 10
 
     override val root = borderpane {
         prefWidth = 1000.0
         center {
-            pagPages = pagination(pageCount(), 0) {
-                setPageFactory { pageNum ->
-                    val from = pageNum * itemsPerPage
-                    val to = from + itemsPerPage
-                    val toTrimmed = if (to > partsList.size) { partsList.size } else { to }
-                    tableview<Part> {
-                        items = partsList.subList(from, toTrimmed).observable()
-                        columnResizePolicy = SmartResize.POLICY
+            tabPages = tableview<Part> {
+                columnResizePolicy = SmartResize.POLICY
 
-                        column<Part, String>("Group", { ReadOnlyObjectWrapper<String>(it.value.subtype.type.group.name) }).prefWidth(90.0)
-                        column<Part, String>("Type", { ReadOnlyObjectWrapper<String>(it.value.subtype.type.name) }).prefWidth(90.0)
-                        column<Part, String>("SubType", { ReadOnlyObjectWrapper<String>(it.value.subtype.name) }).prefWidth(90.0)
-                        column("Name", Part::name).prefWidth(100.0)
-                        column("Description", Part::description).prefWidth(400.0).remainingWidth()
-                        column<Part, String>("Supplier", { ReadOnlyObjectWrapper<String>(it.value.supplier.name) }).prefWidth(90.0)
-                        column("Value", Part::value).prefWidth(80.0)
-                        column<Part, String>("Package", { ReadOnlyObjectWrapper<String>(it.value.pack.name) }).prefWidth(60.0)
+                column<Part, String>("Group", { ReadOnlyObjectWrapper<String>(it.value.subtype.type.group.name) }).prefWidth(90.0)
+                column<Part, String>("Type", { ReadOnlyObjectWrapper<String>(it.value.subtype.type.name) }).prefWidth(90.0)
+                column<Part, String>("SubType", { ReadOnlyObjectWrapper<String>(it.value.subtype.name) }).prefWidth(90.0)
+                column("Name", Part::name).prefWidth(100.0)
+                column("Description", Part::description).prefWidth(400.0).remainingWidth()
+                column<Part, String>("Supplier", { ReadOnlyObjectWrapper<String>(it.value.supplier.name) }).prefWidth(90.0)
+                column("Value", Part::value).prefWidth(80.0)
+                column<Part, String>("Package", { ReadOnlyObjectWrapper<String>(it.value.pack.name) }).prefWidth(60.0)
 
-                        onDoubleClick {
-                            openInternalWindow(EditorFragment::class, params = mapOf("mode" to EditorMode.EDIT, "part" to selectedItem))
-                        }
-                    }
+                onDoubleClick {
+                    openPartEditor(selectedItem)
                 }
             }
         }
@@ -59,7 +56,7 @@ class MainWindow : View() {
                 }
                 button("New part...") {
                     action {
-                        openInternalWindow(EditorFragment::class, params = mapOf("mode" to EditorMode.NEW))
+                        openPartEditor()
                     }
                 }
                 separator(Orientation.HORIZONTAL) {
@@ -96,24 +93,22 @@ class MainWindow : View() {
             }
         }
         bottom {
-            hbox {
-                prefHeight = 20.0
-                borderpaneConstraints {
-                    alignment = Pos.CENTER
-                }
+            pagPages = pagination(pageCount(), 0) {
+                currentPageIndexProperty().addListener { _, _, newValue -> showPageNum(newValue.toInt()) }
             }
         }
     }
 
     init {
-        with(searchConfig) {
-            name = true
-            desc = true
-            value = true
-            supplier = false
-            pack = false
-            typeSubtype = false
-        }
+        showPageNum(0)
+    }
+
+    fun showPageNum(pageNum: Int) {
+        println("Showing pageNum: $pageNum")
+        val from = pageNum * itemsPerPage
+        val to = from + itemsPerPage
+        val toTrimmed = if (to > partsList.size) { partsList.size } else { to }
+        tabPages.items = partsList.subList(from, toTrimmed).observable()
     }
 
     fun pageCount() = (partsList.size + itemsPerPage - 1) /  itemsPerPage
@@ -133,7 +128,29 @@ class MainWindow : View() {
                                 (part.subtype.name.contains(searchRx) || part.subtype.type.name.contains(searchRx)))
             }
         }
+        updateCount()
+    }
+
+    private fun updateCount() {
         pagPages.pageCount = pageCount()
         labTotal.text = "Items count: ${partsList.size}"
+    }
+
+    fun openPartEditor(part: Part? = null) {
+        val params = if (part == null) {
+            mapOf("mode" to EditorMode.NEW, "parent" to this)
+        } else {
+            mapOf("mode" to EditorMode.EDIT, "part" to part, "parent" to this)
+        }
+        val fragment = find(EditorFragment::class, params)
+        openInternalWindow(fragment)
+    }
+
+    fun editorFinished(part: Part? = null) {
+        println("From editor: ${part}")
+        if (part != null) {
+            Database.savePart(part)
+            doSearch(txtSearch.text)
+        }
     }
 }
