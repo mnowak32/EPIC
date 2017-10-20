@@ -32,6 +32,7 @@ class MainWindow : View() {
 
     override val root = borderpane {
         var txtSearch: TextField by singleAssign()
+        var menuSearch: MenuButton by singleAssign()
 
         prefWidth = 1000.0
         center {
@@ -47,10 +48,13 @@ class MainWindow : View() {
                 column("Value", Part::value).prefWidth(80.0)
                 column<Part, String>("Package", { ReadOnlyObjectWrapper<String>(it.value.pack.name) }).prefWidth(60.0)
 
-                onDoubleClick {
-                    openPartEditor(selectedItem)
+                setRowFactory {
+                    TableRow<Part>().apply {
+                        onDoubleClick {
+                            openPartEditor(selectedItem)
+                        }
+                    }
                 }
-
             }
         }
         top {
@@ -69,10 +73,16 @@ class MainWindow : View() {
                     action {
                         doSearch()
                     }
-                    setOnKeyPressed {
-                        if (it.code == KeyCode.ESCAPE) {
-                            this.text = ""
-                            doSearch()
+                    setOnKeyPressed { ev ->
+                        when(ev.code) {
+                            KeyCode.ESCAPE -> {
+                                text = ""
+                                doSearch()
+                            }
+                            KeyCode.DOWN -> {
+                                menuSearch.show()
+                            }
+                            else -> {}
                         }
                     }
                 }
@@ -83,7 +93,7 @@ class MainWindow : View() {
                     }
                 }
 
-                menubutton("⋯") {
+                menuSearch = menubutton("⋯") {
                     checkmenuitem("by Name").selectedProperty().bindBidirectional(searchConfig.nameProperty)
                     checkmenuitem("by Description").selectedProperty().bindBidirectional(searchConfig.descProperty)
                     checkmenuitem("by Value").selectedProperty().bindBidirectional(searchConfig.valueProperty)
@@ -97,14 +107,18 @@ class MainWindow : View() {
             }
         }
 
-        setOnKeyPressed {
-            when(it.code) {
+        setOnKeyPressed { ev ->
+            when(ev.code) {
                 KeyCode.SLASH -> {
                     if (!txtSearch.isFocused) {
-                        it.consume()
-                        txtSearch.requestFocus()
+//                        ev.consume()
+                        //changing focus immediately causes key press to be picked up by the textfield...
+                        runLater {
+                            txtSearch.requestFocus()
+                        }
                     }
                 }
+//                KeyCode.
                 else -> {}
             }
         }
