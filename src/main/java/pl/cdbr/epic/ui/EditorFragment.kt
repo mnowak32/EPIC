@@ -4,10 +4,7 @@ import javafx.beans.property.SimpleIntegerProperty
 import javafx.beans.property.SimpleStringProperty
 import javafx.scene.Node
 import javafx.scene.input.KeyCode
-import pl.cdbr.epic.model.Hierarchy
-import pl.cdbr.epic.model.Package
-import pl.cdbr.epic.model.Part
-import pl.cdbr.epic.model.Supplier
+import pl.cdbr.epic.model.*
 import pl.cdbr.epic.service.Database
 import tornadofx.*
 
@@ -26,6 +23,9 @@ class EditorFragment : Fragment("Part editor") {
     val selectedName = SimpleStringProperty()
     val selectedValue = SimpleStringProperty()
     val errorMessage = SimpleStringProperty()
+    val selectedPack = SimpleStringProperty()
+    val packsList = Packager.packs.map { it.name }.observable()
+    val selectedDescription = SimpleStringProperty()
 
     override val root = form {
         fieldset("ID / Name / Value") {
@@ -48,6 +48,20 @@ class EditorFragment : Fragment("Part editor") {
                 }
             }
         }
+        fieldset("Other") {
+            field("Package") {
+                combobox(selectedPack, packsList) {
+                    isEditable = true
+                }
+
+            }
+        }
+        fieldset("Description") {
+            textarea(selectedDescription) {
+                prefRowCount = 10
+            }
+        }
+
 
         fieldset {
             field {
@@ -97,6 +111,8 @@ class EditorFragment : Fragment("Part editor") {
             selectedSubtype.value = part.subtype.name
             selectedName.value = part.name
             selectedValue.value = part.value
+            selectedPack.value = part.pack.name
+            selectedDescription.value = part.description
         }
     }
 
@@ -108,9 +124,9 @@ class EditorFragment : Fragment("Part editor") {
                     subtype = Hierarchy.of(selectedGroup.value, selectedType.value, selectedSubtype.value),
                     supplier = Supplier("none"),
                     value = selectedValue.value ?: "",
-                    description = "",
+                    description = selectedDescription.value,
                     count = 1,
-                    pack = Package("none")
+                    pack = Packager.of(selectedPack.value)
             )
             mainWindow?.editorFinished(result)
             close()

@@ -3,6 +3,7 @@ package pl.cdbr.epic.model
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import tornadofx.*
+import java.util.concurrent.ConcurrentSkipListSet
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Part(
@@ -16,6 +17,8 @@ data class Part(
         val pack: Package,
         val value: String = ""
 ) {
+    fun withId(newId: Int) = Part(newId, subtype, supplier, name, description, count, sources, pack, value)
+
     companion object {
         fun testData() = listOf(
                 Part(1, Hierarchy.of("IC", "Audio", "Amplifier"), Supplier("ST"), "LM386", "Mono audio amplifier, 3-15V", 5L, emptyList(), Package("DIP-8")),

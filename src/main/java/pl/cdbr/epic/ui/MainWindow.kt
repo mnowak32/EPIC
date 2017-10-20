@@ -24,9 +24,6 @@ class MainWindow : View() {
     val partsList = Database.parts.filtered { true }
 
     val searchTerm = SimpleStringProperty("")
-    val pageCounter = SimpleIntegerProperty(0)
-    val currentPage = SimpleIntegerProperty(0)
-    val partsOnPage = SimpleListProperty<Part>(partsList)
     val total = SimpleStringProperty(" Items count: ")
 
     val searchConfig = Database.config.searchConfig
@@ -34,10 +31,11 @@ class MainWindow : View() {
     val itemsPerPage = 5
 
     override val root = borderpane {
+        var txtSearch: TextField by singleAssign()
+
         prefWidth = 1000.0
         center {
-            tableview(partsOnPage.value) {
-                itemsProperty().bind(partsOnPage)
+            tableview(partsList) {
                 columnResizePolicy = SmartResize.POLICY
 
                 column<Part, String>("Group", { ReadOnlyObjectWrapper<String>(it.value.subtype.type.group.name) }).prefWidth(90.0)
@@ -52,6 +50,7 @@ class MainWindow : View() {
                 onDoubleClick {
                     openPartEditor(selectedItem)
                 }
+
             }
         }
         top {
@@ -66,7 +65,7 @@ class MainWindow : View() {
                     prefWidth = 100.0
                 }
                 label("Search")
-                textfield(searchTerm) {
+                txtSearch = textfield(searchTerm) {
                     action {
                         doSearch()
                     }
@@ -97,26 +96,22 @@ class MainWindow : View() {
                 }
             }
         }
-        bottom {
-            pagination(pageCounter.value, 0) {
-                pageCountProperty().bind(pageCounter)
-                currentPageIndexProperty().apply {
-                    bindBidirectional(currentPage)
-                    addListener { _, _, newValue -> showPageNum(newValue.toInt()) }
+
+        setOnKeyPressed {
+            when(it.code) {
+                KeyCode.SLASH -> {
+                    if (!txtSearch.isFocused) {
+                        it.consume()
+                        txtSearch.requestFocus()
+                    }
                 }
+                else -> {}
             }
         }
     }
 
     init {
         doSearch()
-    }
-
-    fun showPageNum(pageNum: Int) {
-        println("Showing pageNum: $pageNum")
-        val from = pageNum * itemsPerPage
-        val to = minOf(from + itemsPerPage, partsList.size)
-        partsOnPage.value = partsList.subList(from, to).observable()
     }
 
     fun doSearch() {
@@ -139,11 +134,7 @@ class MainWindow : View() {
     }
 
     private fun updateCount() {
-        println("updating count")
-        pageCounter.value = (partsList.size + itemsPerPage - 1) /  itemsPerPage
         total.value = " Items count: ${partsList.size}"
-        currentPage.value = 0
-        showPageNum(0)
     }
 
     fun openPartEditor(part: Part? = null) {

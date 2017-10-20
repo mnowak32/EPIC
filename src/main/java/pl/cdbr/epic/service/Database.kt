@@ -3,10 +3,9 @@ package pl.cdbr.epic.service
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import pl.cdbr.epic.model.AppConfig
-import pl.cdbr.epic.model.Hierarchy
-import pl.cdbr.epic.model.Part
-import pl.cdbr.epic.model.SearchConfig
+import jdk.nashorn.internal.objects.NativeArray.forEach
+import pl.cdbr.epic.model.*
+import pl.cdbr.epic.model.Packager.packs
 import tornadofx.*
 import java.io.File
 
@@ -35,7 +34,7 @@ object Database {
     fun isInitialized() =
             dir.exists() && hierarchyFile.exists() && partsFile.exists()
                     && configFile.exists()
-//                    && packagesFile.exists()
+                    && packagesFile.exists()
 //                    && suppliersFile.exists()
 
     fun initialize() {
@@ -57,13 +56,43 @@ object Database {
         if (!configFile.exists()) {
             mapper.writeValue(configFile, AppConfig.default())
         }
+
+        if (!packagesFile.exists()) {
+            val packs = Packager.initialData()
+            mapper.writeValue(packagesFile, packs)
+        }
+
     }
 
     fun load() {
         val hier = mapper.readValue<Map<String, Map<String, List<String>>>>(hierarchyFile)
         Hierarchy.load(hier)
 
+        val packs = mapper.readValue<List<Package>>(packagesFile)
+        Packager.load(packs)
+
         val newParts = mapper.readValue<MutableList<Part>>(partsFile)
+        //a "local" version of the function - works on loaded and not published data
+        fun newPartId() = (newParts.map { it.id }.max() ?: 0) + 1
+
+        //find parts with duplicated IDs (could easily be done by editing JSON)
+        val duplicatedIds = newParts.groupBy { it.id }.filter { it.value.size > 1 }
+
+        //rewrite parts with duplicated IDs
+        duplicatedIds.forEach { (_, parts) ->
+            parts.drop(1).forEach {
+                val newId = newPartId()
+                println("new ID $newId for $it")
+                val position = newParts.indexOf(it)
+                if (position > -1) {
+                    newParts[position] = it.withId(newId)
+                } else {
+                    newParts += it.withId(newId)
+                }
+            }
+        }
+
+        //the list is clean now, can be published for an outside
         parts.setAll(newParts)
         config = mapper.readValue<AppConfig>(configFile)
     }
@@ -74,6 +103,7 @@ object Database {
         }
 
         mapper.writeValue(hierarchyFile, Hierarchy.unload())
+        mapper.writeValue(packagesFile, Packager.packs)
         mapper.writeValue(partsFile, parts)
         mapper.writeValue(configFile, config)
     }
