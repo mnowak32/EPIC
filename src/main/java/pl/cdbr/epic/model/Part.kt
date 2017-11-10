@@ -17,7 +17,17 @@ data class Part(
         val pack: Package,
         val value: String = ""
 ) {
-    fun withId(newId: Int) = Part(newId, subtype, supplier, name, description, count, sources, pack, value)
+    val subtypeName: String
+        get() = subtype.name
+    val typeName: String
+        get() = subtype.type.name
+    val groupName: String
+        get() = subtype.type.group.name
+
+    val packName: String
+        get() = pack.name
+
+    fun withId(newId: Int) = copy(id = newId)
 
     companion object {
         fun testData() = listOf(
@@ -30,13 +40,17 @@ data class Part(
     }
 }
 
-class PartModel : ItemViewModel<Part>() {
+class PartModel(p: Part?) : ItemViewModel<Part>(p) {
     val id = bind(Part::id)
-    val subtype = bind(Part::subtype)
+//    val subtype = bind(Part::subtype)
+    val subtypeName = bind(Part::subtypeName)
+    val typeName = bind(Part::typeName)
+    val groupName = bind(Part::groupName)
     val supplier = bind(Part::supplier)
     val name = bind(Part::name)
     val value = bind(Part::value)
+    val packName = bind(Part::packName)
     val description = bind(Part::description)
     val count = bind(Part::count)
-    val sources = bind(Part::sources)
+//    val sources = bind(Part::sources)
 }

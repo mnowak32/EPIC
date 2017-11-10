@@ -10,54 +10,47 @@ import tornadofx.*
 
 class EditorFragment : Fragment("Part editor") {
     val mode = (params["mode"] as EditorMode?) ?: EditorMode.NEW
-    val part = (params["part"] as Part?)
+    var part = (params["part"] as Part?)
+    var partModel = PartModel(part)
     val mainWindow = (params["parent"] as MainWindow?)
 
-    val selectedId = SimpleIntegerProperty()
     val groupsList = Hierarchy.groups.map { it.name }.observable()
-    val selectedGroup = SimpleStringProperty()
     val typesList = mutableListOf<String>().observable()
-    val selectedType = SimpleStringProperty()
     val subtypesList = mutableListOf<String>().observable()
-    val selectedSubtype = SimpleStringProperty()
-    val selectedName = SimpleStringProperty()
-    val selectedValue = SimpleStringProperty()
     val errorMessage = SimpleStringProperty()
-    val selectedPack = SimpleStringProperty()
     val packsList = Packager.packs.map { it.name }.observable()
-    val selectedDescription = SimpleStringProperty()
 
     override val root = form {
         fieldset("ID / Name / Value") {
             field {
-                label(selectedId)
-                textfield(selectedName)
-                textfield(selectedValue)
+                label(partModel.id)
+                textfield(partModel.name)
+                textfield(partModel.value)
             }
         }
         fieldset("Hierarchy") {
             field {
-                combobox(selectedGroup, groupsList) {
+                combobox(partModel.groupName, groupsList) {
                     isEditable = true
                 }
-                combobox(selectedType, typesList) {
+                combobox(partModel.typeName, typesList) {
                     isEditable = true
                 }
-                combobox(selectedSubtype, subtypesList) {
+                combobox(partModel.subtypeName, subtypesList) {
                     isEditable = true
                 }
             }
         }
         fieldset("Other") {
             field("Package") {
-                combobox(selectedPack, packsList) {
+                combobox(partModel.packName, packsList) {
                     isEditable = true
                 }
 
             }
         }
         fieldset("Description") {
-            textarea(selectedDescription) {
+            textarea(partModel.description) {
                 prefRowCount = 10
             }
         }
@@ -91,28 +84,20 @@ class EditorFragment : Fragment("Part editor") {
 
     init {
 
-        selectedGroup.onChange { newGroup ->
+        partModel.groupName.onChange { newGroup ->
             typesList.setAll(Hierarchy.types.filter { it.group.name == newGroup }.map { it.name })
-            selectedType.value = if (typesList.size > 0) { typesList.first() } else { "" }
+            partModel.typeName.value = if (typesList.size > 0) { typesList.first() } else { "" }
         }
 
-        selectedType.onChange { newType ->
+        partModel.typeName.onChange { newType ->
             subtypesList.setAll(Hierarchy.subtypes.filter { it.type.name == newType }.map { it.name })
-            selectedSubtype.value = if (subtypesList.size > 0) { subtypesList.first() } else { "" }
+            partModel.subtypeName.value = if (subtypesList.size > 0) { subtypesList.first() } else { "" }
         }
 
         if (mode == EditorMode.NEW) {
-            selectedId.value = Database.newPartId()
+            part = Part(Database.newPartId())
         } else if (mode == EditorMode.EDIT && part != null) {
             title = "Part editor: ${part.name} (${part.value})"
-            selectedId.value = part.id
-            selectedGroup.value = part.subtype.type.group.name
-            selectedType.value = part.subtype.type.name
-            selectedSubtype.value = part.subtype.name
-            selectedName.value = part.name
-            selectedValue.value = part.value
-            selectedPack.value = part.pack.name
-            selectedDescription.value = part.description
         }
     }
 
@@ -135,7 +120,7 @@ class EditorFragment : Fragment("Part editor") {
         }
     }
 
-    fun isInvalid() = (selectedName.isEmpty)
+    fun isInvalid() = (partModel.name.toProperty().isNull)
 }
 
 //fun <T : Node> T.onGrid(row: Int, col: Int, rSpan: Int = 1, cSpan: Int = 1): T {
